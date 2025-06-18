@@ -9,3 +9,185 @@ inside the starter gui insert and rename it to
      |  > VolumeDown (TextButton)
      |  > VolumeLabel (TextLabel)
      |  > NowPlayingLabel (TextLabel)
+
+Now go to ReplicatedStorage insert folder rename it to MusicTracks and insert sound insert a working id
+
+Now go to MusicGui and insert local script and put this
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local Icon = require(ReplicatedStorage:WaitForChild("Icon"))
+
+local player = Players.LocalPlayer
+local musicIcon = nil
+
+local musicFolder = ReplicatedStorage:WaitForChild("MusicTracks")
+local sounds = musicFolder:GetChildren()
+local currentIndex = 1
+local isPlaying = false
+local currentSound = nil
+local volumeLevel = 50
+local maxVolumeLevel = 100
+local currentTypeId = 0
+local typeSpeed = 0.08
+
+local function fadeFrame(frame, fadeIn)
+if fadeIn then
+frame.Visible = true
+frame.BackgroundTransparency = 1
+for _, child in ipairs(frame:GetDescendants()) do
+if child:IsA("TextLabel") or child:IsA("TextButton") then
+child.TextTransparency = 1
+end
+end
+
+local tween = TweenService:Create(frame, TweenInfo.new(0.25), {BackgroundTransparency = 0})  
+	tween:Play()  
+
+	for _, child in ipairs(frame:GetDescendants()) do  
+		if child:IsA("TextLabel") or child:IsA("TextButton") then  
+			TweenService:Create(child, TweenInfo.new(0.25), {TextTransparency = 0}):Play()  
+		end  
+	end  
+else  
+	local tween = TweenService:Create(frame, TweenInfo.new(0.25), {BackgroundTransparency = 1})  
+	tween:Play()  
+
+	for _, child in ipairs(frame:GetDescendants()) do  
+		if child:IsA("TextLabel") or child:IsA("TextButton") then  
+			TweenService:Create(child, TweenInfo.new(0.25), {TextTransparency = 1}):Play()  
+		end  
+	end  
+
+	tween.Completed:Wait()  
+	frame.Visible = false  
+end
+
+end
+
+local function setupMusicGui()
+local playerGui = player:WaitForChild("PlayerGui")
+local musicGui = playerGui:WaitForChild("MusicGui")
+local musicFrame = musicGui:WaitForChild("MusicFrame")
+
+local prevBtn = musicFrame:WaitForChild("PrevButton")  
+local playPauseBtn = musicFrame:WaitForChild("PlayPauseButton")  
+local nextBtn = musicFrame:WaitForChild("NextButton")  
+local nowPlayingLabel = musicFrame:WaitForChild("NowPlayingLabel")  
+local volumeUpBtn = musicFrame:WaitForChild("VolumeUp")  
+local volumeDownBtn = musicFrame:WaitForChild("VolumeDown")  
+local volumeLabel = musicFrame:WaitForChild("VolumeLabel")  
+
+musicFrame.Visible = false  
+musicFrame.BackgroundTransparency = 1  
+for _, child in ipairs(musicFrame:GetDescendants()) do  
+	if child:IsA("TextLabel") or child:IsA("TextButton") then  
+		child.TextTransparency = 1  
+	end  
+end  
+
+if musicIcon then  
+	musicIcon:destroy()  
+end  
+
+musicIcon = Icon.new()  
+musicIcon:setLabel("🎵")  
+
+musicIcon.selected:Connect(function()  
+	fadeFrame(musicFrame, true)  
+end)  
+
+musicIcon.deselected:Connect(function()  
+	fadeFrame(musicFrame, false)  
+end)  
+
+local function typeSongTitle(name)  
+	currentTypeId += 1  
+	local myId = currentTypeId  
+	nowPlayingLabel.Text = "Now Playing: "  
+	for i = 1, #name do  
+		if myId ~= currentTypeId then return end  
+		nowPlayingLabel.Text = "Now Playing: " .. string.sub(name, 1, i)  
+		task.wait(typeSpeed)  
+	end  
+end  
+
+local function updateVolume()  
+	local scaledVolume = math.clamp(volumeLevel / 100, 0, 1)  
+	if currentSound then  
+		currentSound.Volume = scaledVolume  
+	end  
+	volumeLabel.Text = "Volume: " .. volumeLevel .. "%"  
+end  
+
+local function playTrack(index)  
+	if currentSound then  
+		currentSound:Stop()  
+		currentSound:Destroy()  
+	end  
+
+	currentIndex = index  
+	currentSound = sounds[index]:Clone()  
+	currentSound.Parent = workspace  
+	currentSound.Volume = volumeLevel / 100  
+	currentSound:Play()  
+	isPlaying = true  
+	playPauseBtn.Text = "Pause"  
+
+	task.spawn(function()  
+		typeSongTitle(currentSound.Name)  
+	end)  
+end  
+
+updateVolume()  
+
+playPauseBtn.MouseButton1Click:Connect(function()  
+	if not currentSound then  
+		playTrack(currentIndex)  
+	elseif isPlaying then  
+		currentSound:Pause()  
+		playPauseBtn.Text = "Play"  
+		isPlaying = false  
+	else  
+		currentSound:Resume()  
+		playPauseBtn.Text = "Pause"  
+		isPlaying = true  
+	end  
+end)  
+
+nextBtn.MouseButton1Click:Connect(function()  
+	currentIndex = (currentIndex % #sounds) + 1  
+	playTrack(currentIndex)  
+end)  
+
+prevBtn.MouseButton1Click:Connect(function()  
+	currentIndex = (currentIndex - 2 + #sounds) % #sounds + 1  
+	playTrack(currentIndex)  
+end)  
+
+volumeUpBtn.MouseButton1Click:Connect(function()  
+	if volumeLevel < maxVolumeLevel then  
+		volumeLevel = math.min(volumeLevel + 5, maxVolumeLevel)  
+		updateVolume()  
+	end  
+end)  
+
+volumeDownBtn.MouseButton1Click:Connect(function()  
+	if volumeLevel > 0 then  
+		volumeLevel = math.max(volumeLevel - 5, 0)  
+		updateVolume()  
+	end  
+end)  
+
+-- random song on join
+local randomIndex = math.random(1, #sounds)  
+playTrack(randomIndex)
+end
+
+setupMusicGui()
+
+player.CharacterAdded:Connect(function()
+task.wait(1)
+setupMusicGui()
+end)
