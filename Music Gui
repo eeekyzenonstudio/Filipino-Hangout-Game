@@ -1,1 +1,11 @@
-
+StarterGui 
+inside the starter gui insert and rename it to
+ > MusicGui (ScreenGui)    
+     | > MusicFrame (Frame)
+     |  >PrevButton (TextButton)
+     |  > PlayPauseButton (TextButton)
+     |  > NNexButton (TextButton)
+     |  > VolumeUp (TextButton)
+     |  > VolumeDown (TextButton)
+     |  > VolumeLabel (TextLabel)
+     |  > NowPlayingLabel (TextLabel)
