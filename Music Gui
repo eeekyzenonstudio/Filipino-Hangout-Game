@@ -181,7 +181,7 @@ volumeDownBtn.MouseButton1Click:Connect(function()
 	end  
 end)  
 
--- random song on join
+-- Play random song on join
 local randomIndex = math.random(1, #sounds)  
 playTrack(randomIndex)
 end
